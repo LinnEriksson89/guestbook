@@ -3,16 +3,27 @@
  * Linn Eriksson, HT23
  */
 
-//Variable and object created.
-Guestbook guestbook = new Guestbook();
-bool showMenu = true;
+using System;
 
-//Menu-setup inspired by https://wellsb.com/csharp/beginners/create-menu-csharp-console-application.
-while(showMenu)
+namespace Guestbook
 {
-    showMenu = guestbook.Menu();
-}
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            //Variable and object created.
+            Guestbook guestbook = new Guestbook();
+            bool showMenu = true;
 
-//End of program.
-Console.WriteLine("Tryck på valfri tangent för att avsluta programet.");
-Console.ReadKey();
+            //Menu-setup inspired by https://wellsb.com/csharp/beginners/create-menu-csharp-console-application.
+            while(showMenu)
+            {
+                showMenu = guestbook.Menu();
+            }
+
+            //End of program.
+            Console.WriteLine("Tryck på valfri tangent för att avsluta programet.");
+            Console.ReadKey();
+        }
+    }
+}

@@ -3,11 +3,21 @@
  * Linn Eriksson, HT23
  */
 
-class Post
+using System;
+
+namespace Guestbook
 {
-    //Constructor for post-class
-    public Post (string author, string content)
+    class Post
     {
+        //Constructor for post-class
+        public Post (string author, string content)
+        {
+
+            Author = author;
+            Content = content;
+        }
+
+        //Get and set-methods.
         public string Author {get; set;}
         public string Content {get; set;}
     }
