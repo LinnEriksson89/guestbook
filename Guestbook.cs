@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Guestbook
 {
@@ -12,12 +14,38 @@ namespace Guestbook
     class Guestbook
     {
         //Variables
-        private string fileName = "posts.json";
+        private readonly string fileName = "posts.json", testAuthor = "Linn", testContent = "Hej världen!";
+        private List<Post> postList;
+        private int postLength;
         
         //Constructor for guestbook.
         public Guestbook()
         {
-            //This constructor does nothing but is required to make an object.
+            //Creates a list of the posts, length of the list and a testPost.
+            postList = new List<Post>();
+            postLength = postList.Count;
+
+            //Read json-file and turn into list.
+            if(File.Exists(fileName))
+            {
+                ReadList();
+
+                //Id the list is empty, add test-data to list.
+                if(postLength < 1)
+                {
+                    postList.Add(new Post(testAuthor, testContent));
+                    
+                    File.WriteAllText(@fileName, JsonSerializer.Serialize(postList));
+                }
+            }
+            else
+            {
+                //Create a post and write to the file that's created.
+                
+                postList.Add(new Post(testAuthor, testContent));
+
+                File.WriteAllText(@fileName, JsonSerializer.Serialize(postList));
+            }
         }
         public bool Menu()
         {
@@ -75,49 +103,227 @@ namespace Guestbook
 
         private void AddPosts()
         {
-            //
-        }
+            //Variables.
+            string username, content;
+            int tempInt;
+            Post newPost;
 
-        private void RemovePosts()
-        {
-            //
-        }
+            //Showing the previous posts so that one knows what to add to the guestbook.
+            DisplayPosts("Här är vad folk har skrivit tidigare:");
 
-        private void ReadPosts()
-        {
+            Console.WriteLine("Nu är det din tur att skriva i gästboken!");
+            Console.WriteLine("Ange det namn du vill signera med:");
 
-            //Reading from the json-file with try-catch as errorhandling.
             try
             {
-                if(File.Exists(fileName))
+                //Check if username is at least 3 characters long.
+                username = Console.ReadLine();
+                tempInt = username.Length;
+
+                if (tempInt > 2)
                 {
-                    using(StreamReader streamReader = new StreamReader(fileName))
+                    //Print information and get message.
+                    Console.WriteLine("Vad vill du skriva i gästboken " + username + "?");
+                    Console.WriteLine("Ditt inlägg måste vara minst 10 tecken.");
+                    
+                    try
                     {
-                        //Deserialisera och läsa json här typ?
+                        content = Console.ReadLine();
+                        tempInt = content.Length;
+
+                        if (tempInt > 10)
+                        {
+                            //Create a post and push it to the list.
+                            newPost = new Post(username, content);
+                            postList.Add(newPost);
+
+                            try
+                            {
+                                //Overwrite the file with the new list.
+                                File.WriteAllText(@fileName, JsonSerializer.Serialize(postList));
+                                Console.WriteLine("Ditt inlägg har lagts till.");
+    
+                            }
+                            catch
+                            {
+                                Console.WriteLine("Tyvärr, något gick fel med ditt inlägg.");
+                            }
+                        }
+                        else
+                        {
+                            //Inform why it didn't work.
+                            Console.WriteLine("Ett inlägg måste vara minst 10 tecken långt.");
+                            content = "";
+                        }
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Något gick fel när du skulle skriva in ditt meddelande, försök igen från början.");
                     }
 
-                    //Tillfällig felhanteringshjälp som ska raderas.
-                    Console.WriteLine("Filen finns!");
+
                 }
-                else{
-                    using(FileStream fileStream = File.Create(fileName))
-                    {
-                        string jsonTest = "{\"posts\": [{\"Author\": \"Testanvändare\", \"Content\": \"Testinnehåll\"]";
-
-                        StreamWriter streamWriter = new StreamWriter(fileName, true);
-
-                        streamWriter.WriteLine(jsonTest);
-
-                        Console.WriteLine("Filen fanns inte men har skapats!");
-                    }
+                else
+                {
+                    Console.WriteLine("Namnet måste vara minst tre tecken långt.");
                 }
             }
             catch
             {
-                Console.WriteLine("Tyvärr, filen kunde inte läsas in.");
+                Console.WriteLine("Något gick fel när du skrev in användarnamnet, försök igen.");
             }
 
+            
+            ReturnToMenu();
+        }
+
+        private void RemovePosts()
+        {
+            //Local variables.
+            int input;
+            bool menu = true;
+            
+            //Calculate number of posts in the file.
+            postLength = postList.Count;
+
+            //If no posts, display information.
+            if (postLength == 0)
+            {
+                Console.WriteLine("Tyvärr finns det inga inlägg i gästboken.");
+            }
+            else
+            {
+                //Othwerwise show posts + instructions.
+                DisplayPosts("Vilket inlägg vill du radera?");
+                Console.WriteLine("Ange id-nummer för det inlägg du vill radera:");
+                
+                do
+                {
+                    //Try to convert the user input to int, otherwise print errormessage.
+                    try
+                    {
+                        input = Convert.ToInt32(Console.ReadLine());
+                        
+                        //Control that the id is within the list.
+                        if(input < postLength)
+                        {
+                            //Remove the object with the inputed id.
+                            foreach (var post in postList)
+                            {
+                                int postId = Convert.ToInt32(post.Id);
+                                if(postId == input)
+                                {
+                                    postList.RemoveAt(postId);
+
+                                    //Overwrite the file with the new list.
+                                    File.WriteAllText(@fileName, JsonSerializer.Serialize(postList));
+    
+                                    Console.WriteLine("Inlägget med id " + input + " har raderats och du skickas tillbaka till huvudmenyn.");
+                                    menu = false;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Du verkar ha angett ett id som inte finns, testa igen!");
+                        }
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Du verkar ha angett något som inte är en siffra.");
+
+                    }
+                }while(menu);
+            }
+
+           //Return to main menu.
+            ReturnToMenu();
+        }
+
+        private void ReadPosts()
+        {
+            //Shows posts.
+            DisplayPosts("Här finns följande inlägg:");
+
+            ReturnToMenu();
+            
+        }
+
+        private void DisplayPosts(string message)
+        {
+            //If the file exist, try to read it and display the posts..
+            if (File.Exists(fileName))
+            {
+                try
+                {
+                    //Read the list.
+                    ReadList();
+                    
+                    //Calculate number of posts in the file.
+                    postLength = postList.Count;
+
+                    if (postLength > 0)
+                    {
+                        Console.WriteLine("Välkommen till gästboken!");
+                        Console.WriteLine(message);
+                        Console.WriteLine("------------------------------------\n");
+
+                        foreach (var post in postList)
+                        {
+                            Console.WriteLine(post.Author + " skrev:");
+                            Console.WriteLine(post.Content);
+                            Console.WriteLine("\nInläggets id-nummer: " + post.Id);
+                            Console.WriteLine("------------------------------------\n");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Det finns tyvärr inga inlägg i gästboken!");
+                    }
+
+                }
+                catch
+                {
+                    Console.WriteLine("Tyvärr, filen kunde inte läsas in.");
+
+                }
+            }
+            else
+            {                
+                Console.WriteLine("Det finns inga inlägg i gästboken.");
+            }
+        }
+
+        private List<Post> ReadList()
+        {
+            try
+            {
+                using (StreamReader streamReader = new StreamReader(fileName))
+                {
+                    string json = streamReader.ReadToEnd();
+                    postList = JsonSerializer.Deserialize<List<Post>>(json);
+
+                    streamReader.Close();
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Filen är tom!");
+
+                postList = postList;
+
+            }
+            
+            //Return value outside of loop, error handling in other parts of program so it shouldn't be empty.
+            return postList;
+        }
+
+        private void ReturnToMenu()
+        {
+            //So that the program pauses before returning to menu.
+            Console.WriteLine("\nTryck på valfri tangent för att återgå till menyn.");
             Console.ReadKey();
         }
+    
     }
 }

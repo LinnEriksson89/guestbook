@@ -5,3 +5,5 @@ obj/
 
 #Ignore files.
 *.csproj
+guestbook.sln
+posts.json
