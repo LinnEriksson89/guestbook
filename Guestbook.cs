@@ -23,12 +23,12 @@ namespace Guestbook
         {
             //Creates a list of the posts, length of the list and a testPost.
             postList = new List<Post>();
-            postLength = postList.Count;
 
             //Read json-file and turn into list.
             if(File.Exists(fileName))
             {
                 ReadList();
+                postLength = postList.Count;
 
                 //Id the list is empty, add test-data to list.
                 if(postLength < 1)
@@ -41,7 +41,6 @@ namespace Guestbook
             else
             {
                 //Create a post and write to the file that's created.
-                
                 postList.Add(new Post(testAuthor, testContent));
 
                 File.WriteAllText(@fileName, JsonSerializer.Serialize(postList));
@@ -180,7 +179,8 @@ namespace Guestbook
         private void RemovePosts()
         {
             //Local variables.
-            int input;
+            int input, bugcounter = 0;
+            string tempString;
             bool menu = true;
             
             //Calculate number of posts in the file.
@@ -197,20 +197,25 @@ namespace Guestbook
                 DisplayPosts("Vilket inlägg vill du radera?");
                 Console.WriteLine("Ange id-nummer för det inlägg du vill radera:");
                 
-                do
+                //Decrease postLength to match 0-indexed array.
+                postLength--;
+                
+                while (menu)
                 {
                     //Try to convert the user input to int, otherwise print errormessage.
                     try
                     {
-                        input = Convert.ToInt32(Console.ReadLine());
+                        tempString = Console.ReadLine();
+                        input = Convert.ToInt32(tempString);
+                        
                         
                         //Control that the id is within the list.
-                        if(input < postLength)
+                        if(input <= postLength)
                         {
+                            int postId = 0;
                             //Remove the object with the inputed id.
                             foreach (var post in postList)
                             {
-                                int postId = Convert.ToInt32(post.Id);
                                 if(postId == input)
                                 {
                                     postList.RemoveAt(postId);
@@ -218,22 +223,35 @@ namespace Guestbook
                                     //Overwrite the file with the new list.
                                     File.WriteAllText(@fileName, JsonSerializer.Serialize(postList));
     
-                                    Console.WriteLine("Inlägget med id " + input + " har raderats och du skickas tillbaka till huvudmenyn.");
+                                    Console.WriteLine("Inlägget med id " + input + " har raderats och du skickas tillbaka till huvudmenyn när du trycker på valfri tangent.");
+
                                     menu = false;
                                 }
+
+                                postId++;
                             }
                         }
                         else
                         {
                             Console.WriteLine("Du verkar ha angett ett id som inte finns, testa igen!");
+                            bugcounter++;
                         }
                     }
                     catch
                     {
                         Console.WriteLine("Du verkar ha angett något som inte är en siffra.");
+                        bugcounter++;
 
                     }
-                }while(menu);
+
+                    //Errorhandling if user gets stuck in a loop.
+                    if (bugcounter > 3)
+                    {
+                        Console.WriteLine("Det verkar ha blivit något fel och du skickas tillbaka till startmenyn.");
+                        menu = false;
+                        bugcounter = 0;
+                    }
+                }
             }
 
            //Return to main menu.
@@ -264,16 +282,20 @@ namespace Guestbook
 
                     if (postLength > 0)
                     {
+                        int postId = 0;
                         Console.WriteLine("Välkommen till gästboken!");
                         Console.WriteLine(message);
                         Console.WriteLine("------------------------------------\n");
 
+                        //Loop through posts.
                         foreach (var post in postList)
                         {
                             Console.WriteLine(post.Author + " skrev:");
                             Console.WriteLine(post.Content);
-                            Console.WriteLine("\nInläggets id-nummer: " + post.Id);
+                            Console.WriteLine("\nInläggets id-nummer: " + postId);
                             Console.WriteLine("------------------------------------\n");
+
+                            postId++;
                         }
                     }
                     else
